@@ -1,5 +1,7 @@
 <?php
 
+namespace Pboivin\Logtool;
+
 /**
  * Interactive log file browser.
  *
@@ -389,6 +391,8 @@ class LogTool
     }
 }
 
-array_shift($argv);
-
-(new LogTool())->run($argv);
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_NAME'])) {
+    array_shift($argv);
+    
+    (new LogTool())->run($argv);
+}
