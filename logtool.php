@@ -18,7 +18,9 @@ class Entry
     public function __construct(string $header)
     {
         $this->header = $header;
-        $this->date = substr($header, 0, 10);
+
+        $this->date = substr(preg_replace('/^\[/', '', $header), 0, 10);
+
         $this->body = [];
     }
 
@@ -157,7 +159,10 @@ class EntryCollection
             while (!feof($file)) {
                 $line = fgets($file);
 
-                if (preg_match('/^\d\d\d\d-\d\d-\d\d /', $line)) {
+                if (
+                    preg_match('/^\d\d\d\d-\d\d-\d\d /', $line)
+                    || preg_match('/^\[\d\d\d\d-\d\d-\d\d[T ]?/', $line)
+                ) {
                     if ($current) {
                         $this->entries[$current->header()] = $current;
                     }
