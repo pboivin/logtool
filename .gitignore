@@ -1,2 +1,9 @@
 /tmp
 /logtool-export-*
+/vendor
+/composer.lock
+/.phpunit.result.cache
+/node_modules/
+/package-lock.json
+/package.json
+/.prettierrc.yml
