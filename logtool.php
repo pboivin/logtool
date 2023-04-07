@@ -19,7 +19,7 @@ class Entry
 
     public function __construct(string $header)
     {
-        $this->header = $header;
+        $this->header = trim($header);
 
         $this->date = substr(preg_replace('/^\[/', '', $header), 0, 10);
 
@@ -43,12 +43,12 @@ class Entry
 
     public function addLine(string $line): void
     {
-        $this->body[] = $line;
+        $this->body[] = trim($line);
     }
 
     public function __toString(): string
     {
-        return $this->header() . implode('', $this->body()) . "\n";
+        return $this->header() . "\n" . implode("\n", $this->body()) . "\n\n";
     }
 }
 
@@ -393,6 +393,6 @@ class LogTool
 
 if (basename(__FILE__) === basename($_SERVER['SCRIPT_NAME'])) {
     array_shift($argv);
-    
+
     (new LogTool())->run($argv);
 }
