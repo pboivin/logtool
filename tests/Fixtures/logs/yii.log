@@ -1,0 +1,34 @@
+2001-01-01 11:38:26 [12.34.56.78][12][qwertyuiop][error][yii\web\HttpException:404] yii\base\InvalidRouteException: Unable to resolve the request "1638215023.jpg". in /home/site/vendor/yiisoft/yii2/base/Module.php:561
+Stack trace:
+#0 /home/site/vendor/yiisoft/yii2/web/Application.php(103): yii\base\Module->runAction()
+#1 /home/site/vendor/yiisoft/yii2/base/Application.php(384): yii\web\Application->handleRequest()
+#2 /home/site/web/index.php(20): yii\base\Application->run()
+#3 {main}
+Next yii\web\NotFoundHttpException: Page non trouvée. in /home/site/vendor/yiisoft/yii2/web/Application.php:115
+Stack trace:
+#0 /home/site/vendor/yiisoft/yii2/base/Application.php(384): yii\web\Application->handleRequest()
+#1 /home/site/web/index.php(20): yii\base\Application->run()
+#2 {main}
+2001-01-02 11:38:28 [12.34.56.78][12][qwertyuiop][error][yii\web\HttpException:404] yii\base\InvalidRouteException: Unable to resolve the request "1638215023.jpg". in /home/site/vendor/yiisoft/yii2/base/Module.php:561
+Stack trace:
+#0 /home/site/vendor/yiisoft/yii2/web/Application.php(103): yii\base\Module->runAction()
+#1 /home/site/vendor/yiisoft/yii2/base/Application.php(384): yii\web\Application->handleRequest()
+#2 /home/site/web/index.php(20): yii\base\Application->run()
+#3 {main}
+Next yii\web\NotFoundHttpException: Page non trouvée. in /home/site/vendor/yiisoft/yii2/web/Application.php:115
+Stack trace:
+#0 /home/site/vendor/yiisoft/yii2/base/Application.php(384): yii\web\Application->handleRequest()
+#1 /home/site/web/index.php(20): yii\base\Application->run()
+#2 {main}
+2001-01-03 14:10:50 [-][-][-][error][yii\console\Exception] yii\console\Exception: Missing required arguments: to in /home/site/vendor/yiisoft/yii2/console/Controller.php:244
+Stack trace:
+#0 /home/site/vendor/yiisoft/yii2/base/InlineAction.php(51): yii\console\Controller->bindActionParams()
+#1 /home/site/vendor/yiisoft/yii2/base/Controller.php(178): yii\base\InlineAction->runWithParams()
+#2 /home/site/vendor/yiisoft/yii2/console/Controller.php(180): yii\base\Controller->runAction()
+#3 /home/site/vendor/yiisoft/yii2/base/Module.php(552): yii\console\Controller->runAction()
+#4 /home/site/vendor/yiisoft/yii2/console/Application.php(180): yii\base\Module->runAction()
+#5 /home/site/vendor/yiisoft/yii2/console/Application.php(147): yii\console\Application->runAction()
+#6 /home/site/vendor/yiisoft/yii2/base/Application.php(384): yii\console\Application->handleRequest()
+#7 /home/site/yii(16): yii\base\Application->run()
+#8 {main}
+
