@@ -15,6 +15,7 @@ class EntryCollectionTest extends TestCase
             $entry->addLine("One\n\n");
             $entry->addLine("Two\n\n");
             $entry->addLine("Three\n\n");
+            return $entry;
         }, [1, 2, 3]);
     }
 
@@ -30,5 +31,70 @@ class EntryCollectionTest extends TestCase
         $collection = new EntryCollection($this->getEntries());
 
         $this->assertEquals(3, $collection->count());
+        $this->assertEquals(3, count($collection->all()));
+    }
+
+    public function test_can_get_one_entry()
+    {
+        $collection = new EntryCollection($this->getEntries());
+
+        $entry = $collection->get(0);
+
+        $this->assertTrue($entry instanceof Entry);
+        $this->assertEquals('2001-01-01', $entry->date());
+    }
+
+    public function test_can_search_entries()
+    {
+        $collection = new EntryCollection($this->getEntries());
+
+        $result = $collection->search('Test1');
+
+        $this->assertEquals(1, $result->count());
+        $this->assertMatchesRegularExpression('/Test1/', $result->get(0)->header());
+    }
+
+    public function test_can_filter_date_start()
+    {
+        $collection = new EntryCollection($this->getEntries());
+
+        $result = $collection->filterDates('2001-01-02');
+
+        $this->assertEquals(2, $result->count());
+        $this->assertMatchesRegularExpression('/Test2/', $result->get(0)->header());
+        $this->assertMatchesRegularExpression('/Test3/', $result->get(1)->header());
+    }
+
+    public function test_can_filter_date_end()
+    {
+        $collection = new EntryCollection($this->getEntries());
+
+        $result = $collection->filterDates('2001-01-02', '2001-01-03');
+
+        $this->assertEquals(1, $result->count());
+        $this->assertMatchesRegularExpression('/Test2/', $result->get(0)->header());
+    }
+
+    public function test_can_import_files()
+    {
+        $collection = new EntryCollection();
+
+        $collection->importFiles([__DIR__ . '/Fixtures/logs/laravel.log']);
+        $this->assertEquals(3, $collection->count());
+
+        $collection->importFiles([__DIR__ . '/Fixtures/logs/symfony.log']);
+        $this->assertEquals(6, $collection->count());
+
+        $collection->importFiles([__DIR__ . '/Fixtures/logs/yii.log']);
+        $this->assertEquals(9, $collection->count());
+    }
+
+    public function test_throws_file_not_found_exception()
+    {
+        $this->expectExceptionMessageMatches('/File not found: this_file_does_not_exist/');
+
+        $collection = new EntryCollection();
+
+        $collection->importFiles(['this_file_does_not_exist']);
     }
 }

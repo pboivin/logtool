@@ -13,11 +13,10 @@ define('PAGE_SIZE', 12);
 
 class Entry
 {
-    protected ?string $header;
     protected ?string $date;
     protected ?array $body;
 
-    public function __construct(string $header)
+    public function __construct(protected string $header)
     {
         $this->header = trim($header);
 
@@ -50,41 +49,50 @@ class Entry
     {
         return $this->header() . "\n" . implode("\n", $this->body()) . "\n\n";
     }
+
+    public static function isHeader(string $line): bool
+    {
+        $line = trim($line);
+
+        return preg_match('/^\d\d\d\d-\d\d-\d\d /', $line) || preg_match('/^\[\d\d\d\d-\d\d-\d\d[T ]?/', $line);
+    }
 }
 
 class EntryCollection
 {
-    protected array $entries = [];
+    protected array $keyedEntries = [];
     protected array $indexedEntries = [];
 
     public function __construct(?array $entries = null)
     {
         if ($entries) {
-            $this->entries = $entries;
+            $this->keyedEntries = $entries;
             $this->reindex();
         }
     }
 
     public function count(): int
     {
-        return count($this->entries);
+        return count($this->keyedEntries);
     }
 
     public function all(): array
     {
-        return $this->entries;
+        return $this->keyedEntries;
     }
 
+    // @todo Extract to paginator or printer class
+    /*
     public function list(bool $paginated = true): void
     {
         $n = 1;
 
         echo "\n";
 
-        foreach ($this->entries as $header => $entry) {
+        foreach ($this->keyedEntries as $header => $entry) {
             echo "{$n}. $header\n";
 
-            if ($paginated && ($n % PAGE_SIZE === 0 || $n === count($this->entries))) {
+            if ($paginated && ($n % PAGE_SIZE === 0 || $n === count($this->keyedEntries))) {
                 $next = true;
 
                 while ($next) {
@@ -107,7 +115,10 @@ class EntryCollection
             $n++;
         }
     }
+    */
 
+    // @todo Change to get(), defer to printer class
+    /*
     public function show(int $position): void
     {
         if ($entry = $this->indexedEntries[$position - 1] ?? false) {
@@ -120,12 +131,22 @@ class EntryCollection
             echo "\nNot found\n\n";
         }
     }
+    */
+
+    public function get(int $index): ?Entry
+    {
+        if ($entry = $this->indexedEntries[$index] ?? false) {
+            return $entry;
+        }
+
+        return null;
+    }
 
     public function search(string $term): EntryCollection
     {
         $results = [];
 
-        foreach ($this->entries as $header => $entry) {
+        foreach ($this->keyedEntries as $header => $entry) {
             if (preg_match("/$term/i", $header)) {
                 $results[$header] = $entry;
             }
@@ -138,7 +159,7 @@ class EntryCollection
     {
         $results = [];
 
-        foreach ($this->entries as $header => $entry) {
+        foreach ($this->keyedEntries as $header => $entry) {
             if ($end && $entry->date() >= $end) {
                 continue;
             }
@@ -153,20 +174,30 @@ class EntryCollection
         return new EntryCollection($results);
     }
 
-    public function importFile(string $path): void
+    public function importFiles(array $paths): void
     {
+        foreach ($paths as $path) {
+            $this->importFile($path);
+        }
+
+        $this->reindex();
+    }
+
+    protected function importFile(string $path): void
+    {
+        if (!file_exists($path)) {
+            throw new \Exception("File not found: $path");
+        }
+
         $current = null;
 
         if ($file = fopen($path, 'r')) {
             while (!feof($file)) {
                 $line = fgets($file);
 
-                if (
-                    preg_match('/^\d\d\d\d-\d\d-\d\d /', $line)
-                    || preg_match('/^\[\d\d\d\d-\d\d-\d\d[T ]?/', $line)
-                ) {
+                if (Entry::isHeader($line)) {
                     if ($current) {
-                        $this->entries[$current->header()] = $current;
+                        $this->keyedEntries[$current->header()] = $current;
                     }
                     $current = new Entry($line);
                 } else {
@@ -178,19 +209,46 @@ class EntryCollection
             fclose($file);
         }
 
-        $this->reindex();
+        if ($current) {
+            $this->keyedEntries[$current->header()] = $current;
+        }
     }
 
-    public function reindex(): void
+    protected function reindex(): void
     {
-        ksort($this->entries);
+        $tmpEntries = [];
 
-        $this->indexedEntries = array_values($this->entries);
+        foreach ($this->keyedEntries as $entry) {
+            $key = $entry->date() . '|' . $entry->header();
+
+            $tmpEntries[$key] = $entry;
+        }
+
+        ksort($tmpEntries);
+
+        $this->keyedEntries = $tmpEntries;
+
+        $this->indexedEntries = array_values($this->keyedEntries);
+    }
+}
+
+class Console
+{
+    public function echo(string $s): void
+    {
+        echo $s;
+    }
+
+    public function exit(int $code): void
+    {
+        exit($code);
     }
 }
 
 class LogTool
 {
+    protected Console $console;
+
     protected EntryCollection $originalEntries;
 
     protected ?EntryCollection $filteredEntries = null;
@@ -204,18 +262,20 @@ class LogTool
         'r' => ['alias' => 'reset'],
         'h' => ['alias' => 'help'],
         'q' => ['alias' => 'quit'],
-        'list' =>   ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
-        'show' =>   ['description' => 's, show [number]         Show entry'],
-        'search' => ['description' => '/, search [term]         Search entries'],
-        'date' =>   ['description' => 'd, date [start] [end]    Filter by date'],
-        'export' => ['description' => 'e, export [-l]           Export entries [-l : export list, default includes all content]'],
-        'reset' =>  ['description' => 'r, reset                 Reset original entries'],
-        'help' =>   ['description' => 'h, help'],
-        'quit' =>   ['description' => 'q, quit'],
+        'list ' => /***/ ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
+        'show' => /****/ ['description' => 's, show [number]         Show entry'],
+        'search' => /**/ ['description' => '/, search [term]         Search entries'],
+        'date' => /****/ ['description' => 'd, date [start] [end]    Filter by date'],
+        'export' => /**/ ['description' => 'e, export [-l]           Export entries [-l : export list, default includes all content]'],
+        'reset' => /***/ ['description' => 'r, reset                 Reset original entries'],
+        'help' => /****/ ['description' => 'h, help'],
+        'quit' => /****/ ['description' => 'q, quit'],
     ];
 
-    public function __construct()
+    public function __construct(?Console $console = null)
     {
+        $this->console = $console ?? new Console();
+
         $this->originalEntries = new EntryCollection();
     }
 
@@ -231,13 +291,11 @@ class LogTool
     public function run(array $files): void
     {
         if (empty($files)) {
-            echo "Usage: php logtool.php FILES\n";
-            exit(1);
+            $this->console->echo("Usage: php logtool.php FILES\n");
+            $this->console->exit(1);
         }
 
-        foreach ($files as $file) {
-            $this->originalEntries->importFile($file);
-        }
+        $this->originalEntries->importFiles($files);
 
         $this->interactive();
     }
@@ -250,11 +308,11 @@ class LogTool
             $input = readline('logtool> ');
             $arguments = explode(' ', $input);
 
-            if (!$this->handle($arguments)) {
-                echo "Unknown command. Type 'help' to see available commands.\n\n";
-            }
-
             readline_add_history($input);
+
+            if (!$this->handle($arguments)) {
+                $this->console->echo("Unknown command. Type 'help' to see available commands.\n\n");
+            }
         }
     }
 
@@ -262,7 +320,7 @@ class LogTool
     {
         $count = $this->getEntries()->count();
 
-        echo "\nFound $count entries.\n\n";
+        $this->console->echo("\nFound $count entries.\n\n");
     }
 
     protected function handle(array $arguments): bool
@@ -290,20 +348,20 @@ class LogTool
 
     protected function helpCommand(array $arguments = []): void
     {
-        echo "\nAvailable commands:\n";
+        $this->console->echo("\nAvailable commands:\n");
 
         foreach ($this->commands as $command) {
             if ($desc = $command['description'] ?? false) {
-                echo "  $desc\n";
+                $this->console->echo("  $desc\n");
             }
         }
 
-        echo "\n";
+        $this->console->echo("\n");
     }
 
     protected function quitCommand(array $arguments = []): void
     {
-        exit(0);
+        $this->console->exit(0);
     }
 
     protected function listCommand(array $arguments = []): void
@@ -334,7 +392,7 @@ class LogTool
 
                 $this->showCount();
             } else {
-                echo "\nNo results\n\n";
+                $this->console->echo("\nNo results\n\n");
             }
         } else {
             $this->helpCommand([]);
@@ -354,7 +412,7 @@ class LogTool
 
                 $this->showCount();
             } else {
-                echo "\nNo results\n\n";
+                $this->console->echo("\nNo results\n\n");
             }
         } else {
             $this->helpCommand([]);
@@ -378,7 +436,7 @@ class LogTool
 
         file_put_contents("./logtool-export-$time.txt", implode('', $output));
 
-        echo "\nDone\n\n";
+        $this->console->echo("\nDone\n\n");
 
         $this->quitCommand();
     }
