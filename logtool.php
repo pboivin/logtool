@@ -81,58 +81,6 @@ class EntryCollection
         return $this->keyedEntries;
     }
 
-    // @todo Extract to paginator or printer class
-    /*
-    public function list(bool $paginated = true): void
-    {
-        $n = 1;
-
-        echo "\n";
-
-        foreach ($this->keyedEntries as $header => $entry) {
-            echo "{$n}. $header\n";
-
-            if ($paginated && ($n % PAGE_SIZE === 0 || $n === count($this->keyedEntries))) {
-                $next = true;
-
-                while ($next) {
-                    $input = readline("Type number to show entry, 'Enter' for next page, 'q' to go back ... ");
-                    $input = trim($input);
-
-                    echo "\n";
-
-                    if ($input == 'q') {
-                        $next = false;
-                        return;
-                    } elseif ($input != '') {
-                        $this->show((int) $input);
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            $n++;
-        }
-    }
-    */
-
-    // @todo Change to get(), defer to printer class
-    /*
-    public function show(int $position): void
-    {
-        if ($entry = $this->indexedEntries[$position - 1] ?? false) {
-            echo "\n";
-            echo "====================\n";
-            echo " Entry {$position}\n";
-            echo "====================\n";
-            echo "{$entry}\n\n";
-        } else {
-            echo "\nNot found\n\n";
-        }
-    }
-    */
-
     public function get(int $index): ?Entry
     {
         if ($entry = $this->indexedEntries[$index] ?? false) {
@@ -232,6 +180,75 @@ class EntryCollection
     }
 }
 
+class Printer
+{
+    public function __construct(
+        protected EntryCollection $collection,
+        protected Console $console,
+    ) {
+    }
+
+    public function show(int $position): void
+    {
+        if ($entry = $this->collection->get($position - 1)) {
+            $this->console->echo("\n");
+            $this->console->echo("====================\n");
+            $this->console->echo(" Entry {$position}\n");
+            $this->console->echo("====================\n");
+            $this->console->echo("{$entry}\n\n");
+        } else {
+            $this->console->echo("\nNot found\n\n");
+        }
+    }
+
+    public function list(): void
+    {
+        $this->console->echo("\n");
+
+        $n = 1;
+
+        foreach ($this->collection->all() as $entry) {
+            $this->console->echo("{$n}. {$entry->header()}\n\n");
+
+            $n++;
+        }
+    }
+
+    public function paginate(?int $pageSize = null): void
+    {
+        $pageSize = $pageSize ?: PAGE_SIZE;
+
+        $this->console->echo("\n");
+
+        $n = 1;
+
+        foreach ($this->collection->all() as $entry) {
+            $this->console->echo("{$n}. {$entry->header()}\n\n");
+
+            if ($n % $pageSize === 0 || $n === $this->collection->count()) {
+                $next = true;
+
+                while ($next) {
+                    $input = $this->console->input("Type number to show entry, 'Enter' for next page, 'q' to go back ... ");
+
+                    $this->console->echo("\n");
+
+                    if ($input == 'q') {
+                        $next = false;
+                        return;
+                    } elseif ($input != '') {
+                        $this->show((int) $input);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            $n++;
+        }
+    }
+}
+
 class Console
 {
     public function echo(string $s): void
@@ -239,9 +256,28 @@ class Console
         echo $s;
     }
 
+    public function input(string $prompt): string
+    {
+        return trim(readline($prompt));
+    }
+
+    public function readCommand(): array
+    {
+        $input = readline('logtool> ');
+
+        readline_add_history($input);
+
+        return explode(' ', $input);
+    }
+
     public function exit(int $code): void
     {
         exit($code);
+    }
+
+    public function isInteractive(): bool
+    {
+        return true;
     }
 }
 
@@ -262,7 +298,7 @@ class LogTool
         'r' => ['alias' => 'reset'],
         'h' => ['alias' => 'help'],
         'q' => ['alias' => 'quit'],
-        'list ' => /***/ ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
+        'list' => /****/ ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
         'show' => /****/ ['description' => 's, show [number]         Show entry'],
         'search' => /**/ ['description' => '/, search [term]         Search entries'],
         'date' => /****/ ['description' => 'd, date [start] [end]    Filter by date'],
@@ -293,6 +329,7 @@ class LogTool
         if (empty($files)) {
             $this->console->echo("Usage: php logtool.php FILES\n");
             $this->console->exit(1);
+            return;
         }
 
         $this->originalEntries->importFiles($files);
@@ -305,13 +342,14 @@ class LogTool
         $this->showCount();
 
         while (1) {
-            $input = readline('logtool> ');
-            $arguments = explode(' ', $input);
-
-            readline_add_history($input);
+            $arguments = $this->console->readCommand();
 
             if (!$this->handle($arguments)) {
                 $this->console->echo("Unknown command. Type 'help' to see available commands.\n\n");
+            }
+
+            if (!$this->console->isInteractive()) {
+                break;
             }
         }
     }
@@ -320,7 +358,9 @@ class LogTool
     {
         $count = $this->getEntries()->count();
 
-        $this->console->echo("\nFound $count entries.\n\n");
+        $noun = $count === 1 ? 'entry' : 'entries';
+
+        $this->console->echo("\nFound $count $noun.\n\n");
     }
 
     protected function handle(array $arguments): bool
@@ -367,16 +407,16 @@ class LogTool
     protected function listCommand(array $arguments = []): void
     {
         if ($arguments[0] ?? false === '-a') {
-            $this->getEntries()->list(paginated: false);
+            (new Printer($this->getEntries(), $this->console))->list();
         } else {
-            $this->getEntries()->list(paginated: true);
+            (new Printer($this->getEntries(), $this->console))->paginate();
         }
     }
 
     protected function showCommand(array $arguments = []): void
     {
         if ($arguments[0] ?? false) {
-            $this->getEntries()->show((int) $arguments[0]);
+            (new Printer($this->getEntries(), $this->console))->show((int) $arguments[0]);
         } else {
             $this->helpCommand([]);
         }
