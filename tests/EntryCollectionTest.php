@@ -10,13 +10,16 @@ class EntryCollectionTest extends TestCase
 {
     private function getEntries(): array
     {
-        return array_map(function ($i) {
-            $entry = new Entry("[2001-01-0$i] Test$i\n\n");
-            $entry->addLine("One\n\n");
-            $entry->addLine("Two\n\n");
-            $entry->addLine("Three\n\n");
-            return $entry;
-        }, [1, 2, 3]);
+        return array_map(
+            function ($i) {
+                $entry = new Entry("[2001-01-0$i] Test$i\n\n");
+                $entry->addLine("One\n\n");
+                $entry->addLine("Two\n\n");
+                $entry->addLine("Three\n\n");
+                return $entry;
+            },
+            [1, 2, 3]
+        );
     }
 
     public function test_can_initialize_empty_collection()
@@ -32,6 +35,16 @@ class EntryCollectionTest extends TestCase
 
         $this->assertEquals(3, $collection->count());
         $this->assertEquals(3, count($collection->all()));
+    }
+
+    public function test_entries_are_sorted()
+    {
+        $collection = new EntryCollection(array_reverse($this->getEntries()));
+
+        $this->assertEquals(3, $collection->count());
+        $this->assertEquals('2001-01-01', $collection->get(0)->date());
+        $this->assertEquals('2001-01-02', $collection->get(1)->date());
+        $this->assertEquals('2001-01-03', $collection->get(2)->date());
     }
 
     public function test_can_get_one_entry()
