@@ -67,7 +67,9 @@ Three'),
 
         $printer->show(999);
 
-        $this->assertEquals('Not found', $console->getOutput()
+        $this->assertEquals(
+            'Not found',
+            $console->getOutput()
         );
     }
 
