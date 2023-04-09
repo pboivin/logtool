@@ -263,7 +263,7 @@ class Console
 
     public function readCommand(): array
     {
-        $input = readline('logtool> ');
+        $input = $this->input('logtool> ');
 
         readline_add_history($input);
 
@@ -298,14 +298,14 @@ class LogTool
         'r' => ['alias' => 'reset'],
         'h' => ['alias' => 'help'],
         'q' => ['alias' => 'quit'],
-        'list' => /****/ ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
-        'show' => /****/ ['description' => 's, show [number]         Show entry'],
-        'search' => /**/ ['description' => '/, search [term]         Search entries'],
-        'date' => /****/ ['description' => 'd, date [start] [end]    Filter by date'],
-        'export' => /**/ ['description' => 'e, export [-l]           Export entries [-l : export list, default includes all content]'],
-        'reset' => /***/ ['description' => 'r, reset                 Reset original entries'],
-        'help' => /****/ ['description' => 'h, help'],
-        'quit' => /****/ ['description' => 'q, quit'],
+        'list'   => ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
+        'show'   => ['description' => 's, show [number]         Show entry'],
+        'search' => ['description' => '/, search [term]         Search entries'],
+        'date'   => ['description' => 'd, date [start] [end]    Filter by date'],
+        'export' => ['description' => 'e, export [-l]           Export entries [-l : export list, default includes all content]'],
+        'reset'  => ['description' => 'r, reset                 Reset original entries'],
+        'help'   => ['description' => 'h, help'],
+        'quit'   => ['description' => 'q, quit'],
     ];
 
     public function __construct(?Console $console = null)
