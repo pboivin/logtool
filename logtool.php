@@ -42,7 +42,7 @@ class Entry
 
     public function addLine(string $line): void
     {
-        $this->body[] = trim($line);
+        $this->body[] = rtrim($line);
     }
 
     public function __toString(): string
