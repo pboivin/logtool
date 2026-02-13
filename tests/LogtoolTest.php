@@ -161,4 +161,20 @@ class LogtoolTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/Unknown command/', $console->getOutput());
         $this->assertMatchesRegularExpression('/Found 1 entry/', $console->getOutput());
     }
+
+    public function test_can_handle_sort_command()
+    {
+        /** @var mixed $console */
+        $console = Mockery::mock(FakeConsole::class);
+        $console->makePartial();
+        $console
+            ->shouldReceive('readCommand')
+            ->once()
+            ->andReturn(['sort']);
+
+        $logtool = new LogTool($console);
+        $logtool->run([__DIR__ . '/Fixtures/logs/laravel.log']);
+
+        $this->assertDoesNotMatchRegularExpression('/Unknown command/', $console->getOutput());
+    }
 }

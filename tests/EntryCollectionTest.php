@@ -37,9 +37,21 @@ class EntryCollectionTest extends TestCase
         $this->assertEquals(3, count($collection->all()));
     }
 
-    public function test_entries_are_sorted()
+    public function test_entries_are_not_sorted_by_default()
     {
         $collection = new EntryCollection(array_reverse($this->getEntries()));
+
+        $this->assertEquals(3, $collection->count());
+        $this->assertEquals('2001-01-03', $collection->get(0)->date());
+        $this->assertEquals('2001-01-02', $collection->get(1)->date());
+        $this->assertEquals('2001-01-01', $collection->get(2)->date());
+    }
+
+    public function test_entries_can_be_sorted()
+    {
+        $collection = new EntryCollection(array_reverse($this->getEntries()));
+
+        $collection->sort();
 
         $this->assertEquals(3, $collection->count());
         $this->assertEquals('2001-01-01', $collection->get(0)->date());
