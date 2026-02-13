@@ -162,7 +162,7 @@ class EntryCollection
         }
     }
 
-    protected function reindex(): void
+    protected function reindex(bool $sorted = false): void
     {
         $tmpEntries = [];
 
@@ -172,11 +172,18 @@ class EntryCollection
             $tmpEntries[$key] = $entry;
         }
 
-        ksort($tmpEntries);
+        if ($sorted) {
+            ksort($tmpEntries);
+        }
 
         $this->keyedEntries = $tmpEntries;
 
         $this->indexedEntries = array_values($this->keyedEntries);
+    }
+
+    public function sort(): void
+    {
+        $this->reindex(true);
     }
 }
 
@@ -291,6 +298,7 @@ class LogTool
 
     protected array $commands = [
         'l' => ['alias' => 'list'],
+        't' => ['alias' => 'sort'],
         's' => ['alias' => 'show'],
         '/' => ['alias' => 'search'],
         'd' => ['alias' => 'date'],
@@ -299,6 +307,7 @@ class LogTool
         'h' => ['alias' => 'help'],
         'q' => ['alias' => 'quit'],
         'list'   => ['description' => 'l, list [-a]             List entries [-a : list all, default is paginated]'],
+        'sort'   => ['description' => 't, sort                  Sort entries by date'],
         'show'   => ['description' => 's, show [number]         Show entry'],
         'search' => ['description' => '/, search [term]         Search entries'],
         'date'   => ['description' => 'd, date [start] [end]    Filter by date'],
@@ -486,6 +495,15 @@ class LogTool
         $this->filteredEntries = null;
 
         $this->showCount();
+    }
+
+    protected function sortCommand(array $arguments = []): void
+    {
+        $this->filteredEntries = null;
+
+        $this->getEntries()->sort();
+
+        $this->console->echo("\nEntries sorted.\n\n");
     }
 }
 
